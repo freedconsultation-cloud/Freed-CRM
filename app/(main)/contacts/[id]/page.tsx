@@ -6,6 +6,7 @@ import { Contact, Deal, Activity, Task, STAGE_COLORS, ACTIVITY_ICONS, ActivityTy
 import ContactModal from "@/app/components/ContactModal";
 import ActivityFeed from "@/app/components/ActivityFeed";
 import TaskList from "@/app/components/TaskList";
+import TemplateSelector from "@/app/components/TemplateSelector";
 
 function fmt(n: number) {
   if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
@@ -18,6 +19,7 @@ export default function ContactDetailPage() {
   const [contact, setContact] = useState<any>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [editing, setEditing] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -68,7 +70,11 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
       <div className="page-header">
         <div>
           <div className="page-title">{contact.firstName} {contact.lastName}</div>
-          {contact.company && <div className="page-subtitle">{contact.company}</div>}
+          {contact.company && (
+            <Link href={`/accounts`} className="page-subtitle" style={{ color: "var(--accent)", fontWeight: 600 }}>
+              🏢 {contact.company}
+            </Link>
+          )}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit</button>
@@ -83,6 +89,7 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
             <div className="section-title">AI Tools</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button className="btn btn-secondary btn-sm" onClick={() => askAi("email")} disabled={aiLoading}>✉️ Draft Email</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowTemplates(true)}>📄 Templates</button>
               <button className="btn btn-secondary btn-sm" onClick={() => askAi("summary")} disabled={aiLoading}>📋 Summarize</button>
               <button className="btn btn-secondary btn-sm" onClick={() => askAi("nextStep")} disabled={aiLoading}>🎯 Next Step</button>
             </div>
@@ -181,6 +188,12 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
           initial={{ ...contact, tags: contact.tags as string[] }}
           onClose={() => setEditing(false)}
           onSaved={(updated) => { setContact((prev: any) => ({ ...prev, ...updated })); setEditing(false); }}
+        />
+      )}
+      {showTemplates && (
+        <TemplateSelector
+          contact={{ firstName: contact.firstName, lastName: contact.lastName, company: contact.company, email: contact.email }}
+          onClose={() => setShowTemplates(false)}
         />
       )}
     </div>

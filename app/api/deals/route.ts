@@ -7,6 +7,7 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
       include: {
         contact: { select: { id: true, firstName: true, lastName: true, company: true } },
+        package: { select: { id: true, name: true, price: true, type: true } },
       },
     });
     return NextResponse.json(deals);
@@ -25,10 +26,12 @@ export async function POST(req: Request) {
         value: Number(body.value) || 0,
         stage: body.stage ?? "Lead",
         contactId: body.contactId || null,
+        packageId: body.packageId || null,
         notes: body.notes ?? "",
       },
       include: {
         contact: { select: { id: true, firstName: true, lastName: true, company: true } },
+        package: { select: { id: true, name: true, price: true, type: true } },
       },
     });
     return NextResponse.json(deal, { status: 201 });

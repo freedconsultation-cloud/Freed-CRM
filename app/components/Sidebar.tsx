@@ -5,13 +5,16 @@ import { usePathname } from "next/navigation";
 const NAV = [
   { href: "/dashboard", icon: "📊", label: "Dashboard" },
   { href: "/contacts", icon: "👥", label: "Contacts" },
+  { href: "/accounts", icon: "🏢", label: "Accounts" },
   { href: "/pipeline", icon: "📋", label: "Pipeline" },
+  { href: "/reports", icon: "📈", label: "Reports" },
   { href: "/activities", icon: "🕐", label: "Activity" },
   { href: "/tasks", icon: "✅", label: "Tasks" },
 ];
 
 const SETTINGS = [
   { href: "/settings/packages", icon: "📦", label: "Packages" },
+  { href: "/settings/templates", icon: "✉️", label: "Templates" },
 ];
 
 export default function Sidebar() {

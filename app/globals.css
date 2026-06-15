@@ -113,8 +113,8 @@ tbody tr:hover { background: var(--surface-2); cursor: pointer; }
 .stage-badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 
 /* Pipeline / Kanban */
-.pipeline-board { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 12px; min-height: 0; }
-.pipeline-col { flex-shrink: 0; width: 240px; display: flex; flex-direction: column; gap: 10px; }
+.pipeline-board { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; padding-bottom: 12px; }
+.pipeline-col { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .pipeline-col-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
 .pipeline-col-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
 .pipeline-col-count { font-size: 11px; color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border); border-radius: 20px; padding: 1px 7px; }
@@ -207,5 +207,17 @@ tbody tr:hover { background: var(--surface-2); cursor: pointer; }
 }
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
-  .pipeline-col { width: 200px; }
+  .pipeline-board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* Reports / charts */
+.bar-track { background: var(--surface-2); border-radius: 4px; height: 8px; flex: 1; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+.report-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.report-row:last-child { border-bottom: none; }
+.report-label { min-width: 100px; color: var(--text-muted); font-weight: 600; }
+.report-value { min-width: 80px; text-align: right; font-weight: 700; color: var(--foreground); }
+
+/* Stage timeline (in activity feed) */
+.stage-change-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; color: var(--text-muted); }
+.stage-change-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }

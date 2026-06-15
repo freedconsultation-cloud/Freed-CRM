@@ -2,12 +2,13 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Deal, Task, DEAL_STAGES, STAGE_COLORS } from "@/app/types";
+import { Deal, DealStage, Task, DEAL_STAGES, STAGE_COLORS } from "@/app/types";
 import DealModal from "@/app/components/DealModal";
 import ActivityFeed from "@/app/components/ActivityFeed";
 import TaskList from "@/app/components/TaskList";
 import MilestoneTracker from "@/app/components/MilestoneTracker";
 import ProposalGenerator from "@/app/components/ProposalGenerator";
+import WinLossModal from "@/app/components/WinLossModal";
 
 function fmt(n: number) { return `$${n.toLocaleString()}`; }
 
@@ -19,6 +20,7 @@ export default function DealDetailPage() {
   const [milestones, setMilestones] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [showProposal, setShowProposal] = useState(false);
+  const [winLossStage, setWinLossStage] = useState<"Won" | "Lost" | null>(null);
 
   const load = useCallback(async () => {
     const [dealRes, tasksRes] = await Promise.all([
@@ -48,13 +50,21 @@ export default function DealDetailPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  const moveToStage = async (stage: string) => {
+  const moveToStage = async (stage: DealStage, reason = "") => {
     await fetch(`/api/deals/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...deal, stage, contactId: deal.contact?.id ?? null }),
+      body: JSON.stringify({ ...deal, stage, contactId: deal.contact?.id ?? null, packageId: deal.package?.id ?? null, closeReason: reason }),
     });
     load();
+  };
+
+  const handleStageClick = (stage: DealStage) => {
+    if (stage === "Won" || stage === "Lost") {
+      setWinLossStage(stage);
+    } else {
+      moveToStage(stage);
+    }
   };
 
   const deleteDeal = async () => {
@@ -80,6 +90,9 @@ export default function DealDetailPage() {
               <span style={{ fontSize: 12, color: "var(--text-muted)", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "2px 10px" }}>
                 📦 {deal.package.name}
               </span>
+            )}
+            {deal.closeReason && (
+              <span style={{ fontSize: 11, color: "var(--text-muted)", fontStyle: "italic" }}>· {deal.closeReason}</span>
             )}
           </div>
         </div>
@@ -130,7 +143,13 @@ export default function DealDetailPage() {
               {deal.package && (
                 <div className="detail-field">
                   <span className="detail-field-label">Package</span>
-                  <span>{deal.package.name}</span>
+                  <span>{deal.package.name} · {fmt(deal.package.price)}</span>
+                </div>
+              )}
+              {deal.closeReason && (
+                <div className="detail-field">
+                  <span className="detail-field-label">Reason</span>
+                  <span style={{ color: "var(--text-muted)" }}>{deal.closeReason}</span>
                 </div>
               )}
               {deal.contact && (
@@ -157,7 +176,7 @@ export default function DealDetailPage() {
                     key={stage}
                     className="btn btn-ghost btn-sm"
                     style={{ color: STAGE_COLORS[stage], borderColor: STAGE_COLORS[stage] + "44" }}
-                    onClick={() => moveToStage(stage)}
+                    onClick={() => handleStageClick(stage)}
                   >
                     {stage}
                   </button>
@@ -177,6 +196,14 @@ export default function DealDetailPage() {
       )}
       {showProposal && (
         <ProposalGenerator dealId={id} dealTitle={deal.title} onClose={() => setShowProposal(false)} />
+      )}
+      {winLossStage && (
+        <WinLossModal
+          stage={winLossStage}
+          dealTitle={deal.title}
+          onConfirm={(reason) => { moveToStage(winLossStage, reason); setWinLossStage(null); }}
+          onCancel={() => setWinLossStage(null)}
+        />
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Activity, ActivityType, ACTIVITY_ICONS } from "@/app/types";
+import { Activity, ActivityType, ACTIVITY_ICONS, STAGE_COLORS, DealStage } from "@/app/types";
 import Link from "next/link";
 
 function timeAgo(date: Date | string) {
@@ -13,6 +13,8 @@ function timeAgo(date: Date | string) {
   if (h < 24) return `${h}h ago`;
   return `${Math.floor(h / 24)}d ago`;
 }
+
+const LOG_TYPES: ActivityType[] = ["note", "call", "email", "meeting"];
 
 interface Props {
   activities: Activity[];
@@ -39,11 +41,14 @@ export default function ActivityFeed({ activities, contactId, dealId, onLogged }
     onLogged?.();
   };
 
+  const stageChanges = activities.filter((a) => a.type === "stage_change");
+  const regular = activities.filter((a) => a.type !== "stage_change");
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <div className="log-form">
         <div className="type-tabs">
-          {(["note", "call", "email", "meeting"] as ActivityType[]).map((t) => (
+          {LOG_TYPES.map((t) => (
             <button key={t} className={`type-tab ${type === t ? "active" : ""}`} onClick={() => setType(t)}>
               {ACTIVITY_ICONS[t]} {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
@@ -63,13 +68,32 @@ export default function ActivityFeed({ activities, contactId, dealId, onLogged }
         </div>
       </div>
 
+      {stageChanges.length > 0 && (
+        <div>
+          <div className="section-title" style={{ marginBottom: 8 }}>Stage History</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {stageChanges.map((a) => {
+              const toStage = a.content.match(/to (.+?)(?:\s·|$)/)?.[1] as DealStage | undefined;
+              const color = toStage ? STAGE_COLORS[toStage] ?? "var(--text-muted)" : "var(--text-muted)";
+              return (
+                <div key={a.id} className="stage-change-item">
+                  <div className="stage-change-dot" style={{ background: color }} />
+                  <span>{a.content}</span>
+                  <span style={{ marginLeft: "auto", flexShrink: 0 }}>{timeAgo(a.createdAt)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div className="activity-feed">
-        {activities.length === 0 && (
+        {regular.length === 0 && (
           <div className="empty" style={{ padding: "24px 0" }}>
             <div>No activities yet</div>
           </div>
         )}
-        {activities.map((a) => (
+        {regular.map((a) => (
           <div key={a.id} className="activity-item fade-in">
             <div className="activity-icon">{ACTIVITY_ICONS[a.type as ActivityType] ?? "📝"}</div>
             <div className="activity-body">

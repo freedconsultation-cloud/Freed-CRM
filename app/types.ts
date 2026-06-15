@@ -18,11 +18,14 @@ export interface Deal {
   value: number;
   stage: DealStage;
   contactId?: string | null;
+  packageId?: string | null;
   notes: string;
+  closeReason?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
   closedAt?: Date | string | null;
   contact?: Pick<Contact, "id" | "firstName" | "lastName" | "company"> | null;
+  package?: { id: string; name: string; price: number; type: string } | null;
 }
 
 export interface Activity {
@@ -50,8 +53,17 @@ export interface Task {
   deal?: Pick<Deal, "id" | "title"> | null;
 }
 
+export interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
 export type DealStage = "Lead" | "Qualified" | "Proposal" | "Negotiation" | "Won" | "Lost";
-export type ActivityType = "note" | "call" | "email" | "meeting";
+export type ActivityType = "note" | "call" | "email" | "meeting" | "stage_change";
 
 export const DEAL_STAGES: DealStage[] = ["Lead", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
 
@@ -69,4 +81,5 @@ export const ACTIVITY_ICONS: Record<ActivityType, string> = {
   call: "📞",
   email: "✉️",
   meeting: "🤝",
+  stage_change: "🔄",
 };

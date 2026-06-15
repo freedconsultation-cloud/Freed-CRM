@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Deal, DealStage, DEAL_STAGES, STAGE_COLORS } from "@/app/types";
 import DealModal from "@/app/components/DealModal";
+import WinLossModal from "@/app/components/WinLossModal";
 import Link from "next/link";
 
 function fmt(n: number) {
@@ -15,6 +16,7 @@ export default function PipelinePage() {
   const [editDeal, setEditDeal] = useState<Deal | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [over, setOver] = useState<DealStage | null>(null);
+  const [winLossTarget, setWinLossTarget] = useState<{ dealId: string; stage: "Won" | "Lost" } | null>(null);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/deals");
@@ -24,27 +26,37 @@ export default function PipelinePage() {
   useEffect(() => { load(); }, [load]);
 
   const byStage = (stage: DealStage) => deals.filter((d) => d.stage === stage);
+  const stageTotal = (stage: DealStage) => byStage(stage).reduce((s, d) => s + d.value, 0);
 
-  const stageTotal = (stage: DealStage) =>
-    byStage(stage).reduce((s, d) => s + d.value, 0);
-
-  const moveToStage = async (dealId: string, stage: DealStage) => {
+  const moveToStage = async (dealId: string, stage: DealStage, reason = "") => {
     const deal = deals.find((d) => d.id === dealId);
     if (!deal || deal.stage === stage) return;
     setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, stage } : d));
     await fetch(`/api/deals/${dealId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...deal, stage, contactId: deal.contactId }),
+      body: JSON.stringify({ ...deal, stage, contactId: deal.contact?.id ?? deal.contactId, closeReason: reason }),
     });
   };
 
   const handleDrop = (e: React.DragEvent, stage: DealStage) => {
     e.preventDefault();
     const id = e.dataTransfer.getData("dealId");
-    if (id) moveToStage(id, stage);
+    if (id) {
+      if (stage === "Won" || stage === "Lost") {
+        setWinLossTarget({ dealId: id, stage });
+      } else {
+        moveToStage(id, stage);
+      }
+    }
     setDragging(null);
     setOver(null);
+  };
+
+  const confirmWinLoss = (reason: string) => {
+    if (!winLossTarget) return;
+    moveToStage(winLossTarget.dealId, winLossTarget.stage, reason);
+    setWinLossTarget(null);
   };
 
   return (
@@ -59,16 +71,16 @@ export default function PipelinePage() {
 
       <div className="pipeline-board">
         {DEAL_STAGES.map((stage) => {
-          const stageDue = byStage(stage);
+          const stageDeal = byStage(stage);
           return (
             <div key={stage} className="pipeline-col">
               <div className="pipeline-col-header">
-                <div className="pipeline-col-title" style={{ color: STAGE_COLORS[stage] }}>{stage}</div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {stageDue.length > 0 && (
-                    <span style={{ fontSize: 11, color: "var(--text-muted)" }}>{fmt(stageTotal(stage))}</span>
+                <div className="pipeline-col-title" style={{ color: STAGE_COLORS[stage], fontSize: 11 }}>{stage}</div>
+                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  {stageDeal.length > 0 && (
+                    <span style={{ fontSize: 10, color: "var(--text-muted)" }}>{fmt(stageTotal(stage))}</span>
                   )}
-                  <span className="pipeline-col-count">{stageDue.length}</span>
+                  <span className="pipeline-col-count">{stageDeal.length}</span>
                 </div>
               </div>
 
@@ -79,36 +91,31 @@ export default function PipelinePage() {
                 onDrop={(e) => handleDrop(e, stage)}
                 style={{ display: "flex", flexDirection: "column", gap: 8, padding: 4 }}
               >
-                {stageDue.map((deal) => (
+                {stageDeal.map((deal) => (
                   <div
                     key={deal.id}
                     className={`deal-card ${dragging === deal.id ? "dragging" : ""}`}
+                    style={{ position: "relative", overflow: "hidden" }}
                     draggable
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("dealId", deal.id);
-                      setDragging(deal.id);
-                    }}
+                    onDragStart={(e) => { e.dataTransfer.setData("dealId", deal.id); setDragging(deal.id); }}
                     onDragEnd={() => setDragging(null)}
-                    onClick={() => setEditDeal(deal)}
+                    onClick={() => window.location.href = `/pipeline/${deal.id}`}
                   >
-                    <div
-                      style={{ width: 3, height: "100%", position: "absolute", left: 0, top: 0, borderRadius: "10px 0 0 10px", background: STAGE_COLORS[stage] }}
-                    />
-                    <div style={{ position: "relative" }}>
-                      <div className="deal-card-title">{deal.title}</div>
+                    <div style={{ width: 3, height: "100%", position: "absolute", left: 0, top: 0, borderRadius: "10px 0 0 10px", background: STAGE_COLORS[stage] }} />
+                    <div style={{ paddingLeft: 6 }}>
+                      <div className="deal-card-title" style={{ fontSize: 12 }}>{deal.title}</div>
                       {deal.contact && (
-                        <div className="deal-card-contact">
+                        <div className="deal-card-contact" style={{ fontSize: 11 }}>
                           {deal.contact.firstName} {deal.contact.lastName}
                           {deal.contact.company ? ` · ${deal.contact.company}` : ""}
                         </div>
                       )}
-                      {deal.value > 0 && <div className="deal-card-value">{fmt(deal.value)}</div>}
+                      {deal.value > 0 && <div className="deal-card-value" style={{ fontSize: 12 }}>{fmt(deal.value)}</div>}
                     </div>
                   </div>
                 ))}
-
-                {stageDue.length === 0 && (
-                  <div style={{ padding: "20px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 12 }}>
+                {stageDeal.length === 0 && (
+                  <div style={{ padding: "16px 0", textAlign: "center", color: "var(--text-muted)", fontSize: 11 }}>
                     Drop here
                   </div>
                 )}
@@ -126,9 +133,17 @@ export default function PipelinePage() {
       )}
       {editDeal && (
         <DealModal
-          initial={editDeal}
+          initial={{ ...editDeal, packageId: editDeal.packageId ?? undefined }}
           onClose={() => setEditDeal(null)}
           onSaved={(d) => { setDeals((prev) => prev.map((x) => x.id === d.id ? d : x)); setEditDeal(null); }}
+        />
+      )}
+      {winLossTarget && (
+        <WinLossModal
+          stage={winLossTarget.stage}
+          dealTitle={deals.find((d) => d.id === winLossTarget.dealId)?.title ?? ""}
+          onConfirm={confirmWinLoss}
+          onCancel={() => setWinLossTarget(null)}
         />
       )}
     </div>
