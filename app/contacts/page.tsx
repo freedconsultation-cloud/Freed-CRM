@@ -1,13 +1,14 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { Contact } from "@/app/types";
 import ContactModal from "@/app/components/ContactModal";
+import CSVImport from "@/app/components/CSVImport";
 
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [q, setQ] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
@@ -25,7 +26,10 @@ export default function ContactsPage() {
           <div className="page-title">Contacts</div>
           <div className="page-subtitle">{contacts.length} total</div>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ New Contact</button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-secondary" onClick={() => setShowImport(true)}>⬆ Import CSV</button>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ New Contact</button>
+        </div>
       </div>
 
       <div className="table-wrap">
@@ -43,7 +47,13 @@ export default function ContactsPage() {
           <div className="empty">
             <div className="empty-icon">👥</div>
             <h3>{q ? "No results found" : "No contacts yet"}</h3>
-            <p>{q ? "Try a different search" : "Add your first contact to get started."}</p>
+            <p>{q ? "Try a different search" : "Add your first contact or import a CSV."}</p>
+            {!q && (
+              <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
+                <button className="btn btn-secondary" onClick={() => setShowImport(true)}>⬆ Import CSV</button>
+                <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ New Contact</button>
+              </div>
+            )}
           </div>
         ) : (
           <table>
@@ -83,6 +93,12 @@ export default function ContactsPage() {
         <ContactModal
           onClose={() => setShowModal(false)}
           onSaved={(c) => { setContacts((prev) => [c, ...prev]); setShowModal(false); }}
+        />
+      )}
+      {showImport && (
+        <CSVImport
+          onClose={() => setShowImport(false)}
+          onImported={() => { load(); setShowImport(false); }}
         />
       )}
     </div>

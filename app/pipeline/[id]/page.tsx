@@ -2,9 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Deal, DEAL_STAGES, STAGE_COLORS } from "@/app/types";
+import { Deal, Task, DEAL_STAGES, STAGE_COLORS } from "@/app/types";
 import DealModal from "@/app/components/DealModal";
 import ActivityFeed from "@/app/components/ActivityFeed";
+import TaskList from "@/app/components/TaskList";
 
 function fmt(n: number) { return `$${n.toLocaleString()}`; }
 
@@ -12,12 +13,18 @@ export default function DealDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [deal, setDeal] = useState<any>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [editing, setEditing] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/deals/${id}`);
-    if (!res.ok) { router.push("/pipeline"); return; }
-    setDeal(await res.json());
+    const [dealRes, tasksRes] = await Promise.all([
+      fetch(`/api/deals/${id}`),
+      fetch(`/api/tasks?dealId=${id}`),
+    ]);
+    if (!dealRes.ok) { router.push("/pipeline"); return; }
+    const [dealData, tasksData] = await Promise.all([dealRes.json(), tasksRes.json()]);
+    setDeal(dealData);
+    setTasks(tasksData);
   }, [id, router]);
 
   useEffect(() => { load(); }, [load]);
@@ -58,6 +65,10 @@ export default function DealDetailPage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div className="detail-card">
+            <div className="section-title">Tasks</div>
+            <TaskList tasks={tasks} dealId={id} onChanged={load} compact />
+          </div>
           <div className="detail-card">
             <div className="section-title">Details</div>
             <div className="detail-fields">

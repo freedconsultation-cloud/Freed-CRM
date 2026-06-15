@@ -36,6 +36,20 @@ export interface Activity {
   deal?: Pick<Deal, "id" | "title"> | null;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  dueDate?: Date | string | null;
+  completed: boolean;
+  completedAt?: Date | string | null;
+  contactId?: string | null;
+  dealId?: string | null;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  contact?: Pick<Contact, "id" | "firstName" | "lastName"> | null;
+  deal?: Pick<Deal, "id" | "title"> | null;
+}
+
 export type DealStage = "Lead" | "Qualified" | "Proposal" | "Negotiation" | "Won" | "Lost";
 export type ActivityType = "note" | "call" | "email" | "meeting";
 

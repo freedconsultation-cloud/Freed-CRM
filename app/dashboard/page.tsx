@@ -87,6 +87,40 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Tasks callout */}
+      {(data.overdueTasks.length > 0 || data.todayTasks.length > 0) && (
+        <div style={{ display: "flex", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
+          {data.overdueTasks.length > 0 && (
+            <Link href="/tasks?filter=overdue" style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ background: "var(--red-bg)", border: "1px solid rgba(248,81,73,0.3)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--red)", marginBottom: 2 }}>⚠ OVERDUE TASKS</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--red)" }}>{data.overdueTasks.length}</div>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--red)", opacity: 0.7 }}>
+                  {data.overdueTasks.slice(0, 2).map((t: any) => t.title).join(", ")}
+                  {data.overdueTasks.length > 2 ? ` +${data.overdueTasks.length - 2} more` : ""}
+                </div>
+              </div>
+            </Link>
+          )}
+          {data.todayTasks.length > 0 && (
+            <Link href="/tasks" style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ background: "var(--yellow-bg)", border: "1px solid rgba(227,179,65,0.3)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--yellow)", marginBottom: 2 }}>DUE TODAY</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--yellow)" }}>{data.todayTasks.length}</div>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--yellow)", opacity: 0.8 }}>
+                  {data.todayTasks.slice(0, 2).map((t: any) => t.title).join(", ")}
+                  {data.todayTasks.length > 2 ? ` +${data.todayTasks.length - 2} more` : ""}
+                </div>
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="recent-grid">
         <div className="section-card">
           <div className="section-card-title">Recent Contacts</div>

@@ -2,9 +2,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Contact, Deal, Activity, STAGE_COLORS, ACTIVITY_ICONS, ActivityType } from "@/app/types";
+import { Contact, Deal, Activity, Task, STAGE_COLORS, ACTIVITY_ICONS, ActivityType } from "@/app/types";
 import ContactModal from "@/app/components/ContactModal";
 import ActivityFeed from "@/app/components/ActivityFeed";
+import TaskList from "@/app/components/TaskList";
 
 function fmt(n: number) {
   if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
@@ -15,14 +16,20 @@ export default function ContactDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [contact, setContact] = useState<any>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [editing, setEditing] = useState(false);
   const [aiResult, setAiResult] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/contacts/${id}`);
-    if (!res.ok) { router.push("/contacts"); return; }
-    setContact(await res.json());
+    const [contactRes, tasksRes] = await Promise.all([
+      fetch(`/api/contacts/${id}`),
+      fetch(`/api/tasks?contactId=${id}`),
+    ]);
+    if (!contactRes.ok) { router.push("/contacts"); return; }
+    const [contactData, tasksData] = await Promise.all([contactRes.json(), tasksRes.json()]);
+    setContact(contactData);
+    setTasks(tasksData);
   }, [id, router]);
 
   useEffect(() => { load(); }, [load]);
@@ -86,6 +93,12 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
                 <div className="ai-box-body">{aiResult}</div>
               </div>
             )}
+          </div>
+
+          {/* Tasks */}
+          <div className="detail-card">
+            <div className="section-title">Tasks</div>
+            <TaskList tasks={tasks} contactId={id} onChanged={load} compact />
           </div>
 
           {/* Activity */}
