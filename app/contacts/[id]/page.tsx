@@ -1,0 +1,175 @@
+"use client";
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
+import { Contact, Deal, Activity, STAGE_COLORS, ACTIVITY_ICONS, ActivityType } from "@/app/types";
+import ContactModal from "@/app/components/ContactModal";
+import ActivityFeed from "@/app/components/ActivityFeed";
+
+function fmt(n: number) {
+  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`;
+  return `$${n.toLocaleString()}`;
+}
+
+export default function ContactDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [contact, setContact] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
+  const [aiResult, setAiResult] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    const res = await fetch(`/api/contacts/${id}`);
+    if (!res.ok) { router.push("/contacts"); return; }
+    setContact(await res.json());
+  }, [id, router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const askAi = async (type: string) => {
+    if (!contact) return;
+    setAiLoading(true);
+    setAiResult("");
+    const context = `Contact: ${contact.firstName} ${contact.lastName}, Company: ${contact.company ?? "N/A"}, Email: ${contact.email ?? "N/A"}
+Notes: ${contact.notes}
+Recent activities: ${contact.activities.slice(0, 5).map((a: Activity) => `[${a.type}] ${a.content}`).join("; ")}
+Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.value)})`).join(", ") || "none"}`;
+    const res = await fetch("/api/ai/suggest", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, context }),
+    });
+    const data = await res.json();
+    setAiResult(data.text ?? data.error ?? "");
+    setAiLoading(false);
+  };
+
+  const deleteContact = async () => {
+    if (!confirm("Delete this contact? All deals and activities will be removed.")) return;
+    await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+    router.push("/contacts");
+  };
+
+  if (!contact) {
+    return <div className="page" style={{ color: "var(--text-muted)" }}>Loading...</div>;
+  }
+
+  return (
+    <div className="page fade-in">
+      <Link href="/contacts" className="back-link">← Contacts</Link>
+      <div className="page-header">
+        <div>
+          <div className="page-title">{contact.firstName} {contact.lastName}</div>
+          {contact.company && <div className="page-subtitle">{contact.company}</div>}
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button className="btn btn-secondary" onClick={() => setEditing(true)}>Edit</button>
+          <button className="btn btn-danger" onClick={deleteContact}>Delete</button>
+        </div>
+      </div>
+
+      <div className="detail-layout">
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {/* AI Tools */}
+          <div className="detail-card">
+            <div className="section-title">AI Tools</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-secondary btn-sm" onClick={() => askAi("email")} disabled={aiLoading}>✉️ Draft Email</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => askAi("summary")} disabled={aiLoading}>📋 Summarize</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => askAi("nextStep")} disabled={aiLoading}>🎯 Next Step</button>
+            </div>
+            {aiLoading && <div style={{ fontSize: 13, color: "var(--text-muted)", marginTop: 12 }}>Thinking...</div>}
+            {aiResult && (
+              <div className="ai-box" style={{ marginTop: 12 }}>
+                <div className="ai-box-header">✨ Claude</div>
+                <div className="ai-box-body">{aiResult}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Activity */}
+          <div className="detail-card">
+            <div className="section-title">Activity</div>
+            <ActivityFeed activities={contact.activities} contactId={id} onLogged={load} />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Info */}
+          <div className="detail-card">
+            <div className="section-title">Info</div>
+            <div className="detail-fields">
+              {contact.email && (
+                <div className="detail-field">
+                  <span className="detail-field-label">Email</span>
+                  <a href={`mailto:${contact.email}`} style={{ color: "var(--accent)" }}>{contact.email}</a>
+                </div>
+              )}
+              {contact.phone && (
+                <div className="detail-field">
+                  <span className="detail-field-label">Phone</span>
+                  <span>{contact.phone}</span>
+                </div>
+              )}
+              {contact.company && (
+                <div className="detail-field">
+                  <span className="detail-field-label">Company</span>
+                  <span>{contact.company}</span>
+                </div>
+              )}
+              {contact.notes && (
+                <div className="detail-field" style={{ flexDirection: "column", gap: 4 }}>
+                  <span className="detail-field-label">Notes</span>
+                  <span style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{contact.notes}</span>
+                </div>
+              )}
+              {(contact.tags as string[]).length > 0 && (
+                <div className="detail-field" style={{ flexDirection: "column", gap: 4 }}>
+                  <span className="detail-field-label">Tags</span>
+                  <div className="tags-row">
+                    {(contact.tags as string[]).map((t: string) => (
+                      <span key={t} className="tag">{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Deals */}
+          <div className="detail-card">
+            <div className="section-title">Deals ({contact.deals.length})</div>
+            {contact.deals.length === 0 ? (
+              <div style={{ fontSize: 13, color: "var(--text-muted)" }}>No deals linked</div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {contact.deals.map((d: Deal) => (
+                  <Link key={d.id} href={`/pipeline/${d.id}`}>
+                    <div className="mini-item">
+                      <div>
+                        <div className="mini-item-label">{d.title}</div>
+                        <div className="mini-item-sub">{fmt(d.value)}</div>
+                      </div>
+                      <span className="stage-badge" style={{ background: STAGE_COLORS[d.stage] + "22", color: STAGE_COLORS[d.stage], fontSize: 10 }}>
+                        {d.stage}
+                      </span>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {editing && (
+        <ContactModal
+          initial={{ ...contact, tags: contact.tags as string[] }}
+          onClose={() => setEditing(false)}
+          onSaved={(updated) => { setContact((prev: any) => ({ ...prev, ...updated })); setEditing(false); }}
+        />
+      )}
+    </div>
+  );
+}
