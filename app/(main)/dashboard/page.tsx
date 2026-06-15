@@ -74,10 +74,7 @@ export default function DashboardPage() {
             const count = data.stageBreakdown[stage] ?? 0;
             return (
               <Link key={stage} href="/pipeline" style={{ textDecoration: "none" }}>
-                <div style={{
-                  background: "var(--surface-2)", border: "1px solid var(--border)",
-                  borderRadius: 10, padding: "12px 18px", minWidth: 100, textAlign: "center",
-                }}>
+                <div style={{ background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 10, padding: "12px 18px", minWidth: 100, textAlign: "center" }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: STAGE_COLORS[stage] }}>{count}</div>
                   <div style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{stage}</div>
                 </div>
@@ -87,8 +84,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Tasks callout */}
-      {(data.overdueTasks.length > 0 || data.todayTasks.length > 0) && (
+      {/* Alert banners */}
+      {(data.overdueTasks.length > 0 || data.todayTasks.length > 0 || data.staleDeals.length > 0) && (
         <div style={{ display: "flex", gap: 14, marginBottom: 20, flexWrap: "wrap" }}>
           {data.overdueTasks.length > 0 && (
             <Link href="/tasks?filter=overdue" style={{ flex: 1, minWidth: 200 }}>
@@ -114,6 +111,20 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 11, color: "var(--yellow)", opacity: 0.8 }}>
                   {data.todayTasks.slice(0, 2).map((t: any) => t.title).join(", ")}
                   {data.todayTasks.length > 2 ? ` +${data.todayTasks.length - 2} more` : ""}
+                </div>
+              </div>
+            </Link>
+          )}
+          {data.staleDeals.length > 0 && (
+            <Link href="/pipeline" style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ background: "var(--purple-bg)", border: "1px solid rgba(210,168,255,0.3)", borderRadius: 10, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "var(--purple)", marginBottom: 2 }}>🕐 NO ACTIVITY 14d+</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "var(--purple)" }}>{data.staleDeals.length}</div>
+                </div>
+                <div style={{ fontSize: 11, color: "var(--purple)", opacity: 0.8 }}>
+                  {data.staleDeals.slice(0, 2).map((d: any) => d.title).join(", ")}
+                  {data.staleDeals.length > 2 ? ` +${data.staleDeals.length - 2} more` : ""}
                 </div>
               </div>
             </Link>

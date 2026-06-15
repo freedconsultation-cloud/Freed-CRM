@@ -1,12 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
+const STAGE_PROBABILITY: Record<string, number> = {
+  Lead: 0.10,
+  Qualified: 0.25,
+  Proposal: 0.50,
+  Negotiation: 0.75,
+  Won: 1.0,
+  Lost: 0,
+};
+
 export async function GET() {
   try {
-    const allDeals = await prisma.deal.findMany({
-      include: { package: { select: { id: true, name: true } } },
-      orderBy: { closedAt: "asc" },
-    });
+    const [allDeals, allContacts] = await Promise.all([
+      prisma.deal.findMany({
+        include: { package: { select: { id: true, name: true } } },
+        orderBy: { closedAt: "asc" },
+      }),
+      prisma.contact.findMany({ select: { source: true } }),
+    ]);
 
     const won = allDeals.filter((d) => d.stage === "Won");
     const lost = allDeals.filter((d) => d.stage === "Lost");
@@ -15,7 +27,14 @@ export async function GET() {
     const winRate = closed > 0 ? won.length / closed : 0;
     const avgDealSize = won.length > 0 ? totalRevenue / won.length : 0;
 
-    // Monthly revenue — last 12 months
+    // Weighted pipeline forecast
+    const openDeals = allDeals.filter((d) => d.stage !== "Won" && d.stage !== "Lost");
+    const weightedForecast = openDeals.reduce(
+      (s, d) => s + d.value * (STAGE_PROBABILITY[d.stage] ?? 0),
+      0
+    );
+
+    // Monthly revenue (last 12 months)
     const now = new Date();
     const months: { label: string; revenue: number; count: number }[] = [];
     for (let i = 11; i >= 0; i--) {
@@ -46,8 +65,23 @@ export async function GET() {
     const stages = ["Lead", "Qualified", "Proposal", "Negotiation", "Won", "Lost"];
     const stageBreakdown = stages.map((stage) => {
       const stageDeal = allDeals.filter((d) => d.stage === stage);
-      return { stage, count: stageDeal.length, value: stageDeal.reduce((s, d) => s + d.value, 0) };
+      return {
+        stage,
+        count: stageDeal.length,
+        value: stageDeal.reduce((s, d) => s + d.value, 0),
+        probability: STAGE_PROBABILITY[stage] ?? 0,
+      };
     });
+
+    // Source breakdown
+    const sourceMap: Record<string, number> = {};
+    for (const c of allContacts) {
+      const s = c.source || "Unknown";
+      sourceMap[s] = (sourceMap[s] ?? 0) + 1;
+    }
+    const sourceBreakdown = Object.entries(sourceMap)
+      .map(([source, count]) => ({ source, count }))
+      .sort((a, b) => b.count - a.count);
 
     return NextResponse.json({
       totalRevenue,
@@ -55,9 +89,11 @@ export async function GET() {
       avgDealSize,
       totalWon: won.length,
       totalLost: lost.length,
+      weightedForecast,
       monthlyRevenue: months,
       packagePerformance,
       stageBreakdown,
+      sourceBreakdown,
     });
   } catch (e) {
     console.error(e);

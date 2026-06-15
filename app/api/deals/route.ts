@@ -28,6 +28,7 @@ export async function POST(req: Request) {
         contactId: body.contactId || null,
         packageId: body.packageId || null,
         notes: body.notes ?? "",
+        stageChangedAt: new Date(),
       },
       include: {
         contact: { select: { id: true, firstName: true, lastName: true, company: true } },

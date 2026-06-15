@@ -41,6 +41,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         packageId: body.packageId || null,
         notes: body.notes ?? "",
         closeReason: body.closeReason ?? "",
+        stageChangedAt: stageChanged ? new Date() : undefined,
         closedAt: body.stage === "Won" || body.stage === "Lost" ? new Date() : null,
       },
       include: {

@@ -13,6 +13,8 @@ export async function POST(req: Request) {
         phone: body.phone || null,
         company: body.company || null,
         tags: ["intake"],
+        source: "Intake Form",
+        smUsers: body.teamSize ?? "",
         notes: [
           body.useCase && `Use case: ${body.useCase}`,
           body.teamSize && `Team size: ${body.teamSize}`,
@@ -32,6 +34,7 @@ export async function POST(req: Request) {
       data: {
         title: dealTitle,
         stage: "Lead",
+        stageChangedAt: new Date(),
         contactId: contact.id,
         notes: body.useCase ?? "",
       },

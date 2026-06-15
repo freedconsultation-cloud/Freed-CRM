@@ -8,19 +8,23 @@ datasource db {
 }
 
 model Contact {
-  id         String     @id @default(cuid())
-  firstName  String
-  lastName   String
-  email      String?
-  phone      String?
-  company    String?
-  tags       Json       @default("[]")
-  notes      String     @default("")
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  deals      Deal[]
-  activities Activity[]
-  tasks      Task[]
+  id               String     @id @default(cuid())
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  company          String?
+  tags             Json       @default("[]")
+  notes            String     @default("")
+  source           String     @default("")
+  smPlan           String     @default("")
+  smUsers          String     @default("")
+  smIntegrations   Json       @default("[]")
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deals            Deal[]
+  activities       Activity[]
+  tasks            Task[]
 }
 
 model Package {
@@ -42,10 +46,11 @@ model Deal {
   contactId   String?
   packageId   String?
   notes       String      @default("")
-  closeReason String      @default("")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  closedAt    DateTime?
+  closeReason    String    @default("")
+  stageChangedAt DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  closedAt       DateTime?
   contact     Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
   package     Package?    @relation(fields: [packageId], references: [id], onDelete: SetNull)
   activities  Activity[]

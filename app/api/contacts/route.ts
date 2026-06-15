@@ -38,6 +38,10 @@ export async function POST(req: Request) {
         company: body.company || null,
         tags: body.tags ?? [],
         notes: body.notes ?? "",
+        source: body.source ?? "",
+        smPlan: body.smPlan ?? "",
+        smUsers: body.smUsers ?? "",
+        smIntegrations: body.smIntegrations ?? [],
       },
     });
     return NextResponse.json(contact, { status: 201 });

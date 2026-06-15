@@ -1,11 +1,50 @@
 "use client";
 import { useState } from "react";
-import { Contact } from "@/app/types";
+import { Contact, LEAD_SOURCES, SM_PLANS, SM_USERS, SM_INTEGRATIONS } from "@/app/types";
 
 interface Props {
   initial?: Partial<Contact>;
   onClose: () => void;
   onSaved: (c: Contact) => void;
+}
+
+function PillSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      {options.map((o) => (
+        <button
+          key={o} type="button"
+          onClick={() => onChange(value === o ? "" : o)}
+          style={{
+            padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            background: value === o ? "var(--accent-bg)" : "var(--surface-2)",
+            color: value === o ? "var(--accent)" : "var(--text-muted)",
+            border: `1px solid ${value === o ? "var(--accent)" : "var(--border)"}`,
+          }}
+        >{o}</button>
+      ))}
+    </div>
+  );
+}
+
+function MultiPill({ values, onChange, options }: { values: string[]; onChange: (v: string[]) => void; options: string[] }) {
+  const toggle = (o: string) => onChange(values.includes(o) ? values.filter((v) => v !== o) : [...values, o]);
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+      {options.map((o) => (
+        <button
+          key={o} type="button"
+          onClick={() => toggle(o)}
+          style={{
+            padding: "4px 11px", borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            background: values.includes(o) ? "var(--blue-bg)" : "var(--surface-2)",
+            color: values.includes(o) ? "var(--blue)" : "var(--text-muted)",
+            border: `1px solid ${values.includes(o) ? "var(--blue)" : "var(--border)"}`,
+          }}
+        >{o}</button>
+      ))}
+    </div>
+  );
 }
 
 export default function ContactModal({ initial, onClose, onSaved }: Props) {
@@ -18,7 +57,12 @@ export default function ContactModal({ initial, onClose, onSaved }: Props) {
     company: initial?.company ?? "",
     notes: initial?.notes ?? "",
     tags: (initial?.tags ?? []).join(", "),
+    source: initial?.source ?? "",
+    smPlan: initial?.smPlan ?? "",
+    smUsers: initial?.smUsers ?? "",
+    smIntegrations: (initial?.smIntegrations ?? []) as string[],
   });
+  const [showQual, setShowQual] = useState(!!(initial?.smPlan || initial?.smUsers || (initial?.smIntegrations ?? []).length));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -76,6 +120,13 @@ export default function ContactModal({ initial, onClose, onSaved }: Props) {
             </div>
           </div>
           <div className="form-group">
+            <label className="form-label">Lead Source</label>
+            <select className="field" value={form.source} onChange={(e) => set("source", e.target.value)}>
+              <option value="">— Unknown —</option>
+              {LEAD_SOURCES.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
             <label className="form-label">Tags (comma separated)</label>
             <input className="field" value={form.tags} onChange={(e) => set("tags", e.target.value)} placeholder="prospect, enterprise, warm" />
           </div>
@@ -83,6 +134,39 @@ export default function ContactModal({ initial, onClose, onSaved }: Props) {
             <label className="form-label">Notes</label>
             <textarea className="field" rows={3} value={form.notes} onChange={(e) => set("notes", e.target.value)} placeholder="Any notes about this contact..." />
           </div>
+
+          {/* Smartsheet Qualification */}
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => setShowQual(!showQual)}
+              style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, color: "var(--text-muted)", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em" }}
+            >
+              <span style={{ fontSize: 10 }}>{showQual ? "▼" : "▶"}</span>
+              Smartsheet Qualification
+            </button>
+            {showQual && (
+              <div className="form-stack" style={{ marginTop: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Current Plan</label>
+                  <PillSelect value={form.smPlan} onChange={(v) => set("smPlan", v)} options={SM_PLANS} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Team Size (Smartsheet users)</label>
+                  <PillSelect value={form.smUsers} onChange={(v) => set("smUsers", v)} options={SM_USERS} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Integrations Needed</label>
+                  <MultiPill
+                    values={form.smIntegrations}
+                    onChange={(v) => setForm((f) => ({ ...f, smIntegrations: v }))}
+                    options={SM_INTEGRATIONS}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {error && <div className="form-error">{error}</div>}
           <div className="form-actions">
             <button className="btn btn-secondary" onClick={onClose}>Cancel</button>

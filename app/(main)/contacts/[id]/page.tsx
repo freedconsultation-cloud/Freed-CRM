@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Contact, Deal, Activity, Task, STAGE_COLORS, ACTIVITY_ICONS, ActivityType } from "@/app/types";
+import { Contact, Deal, Activity, Task, STAGE_COLORS, ACTIVITY_ICONS, ActivityType, SM_PLANS, SM_USERS, SM_INTEGRATIONS } from "@/app/types";
 import ContactModal from "@/app/components/ContactModal";
 import ActivityFeed from "@/app/components/ActivityFeed";
 import TaskList from "@/app/components/TaskList";
@@ -64,6 +64,9 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
     return <div className="page" style={{ color: "var(--text-muted)" }}>Loading...</div>;
   }
 
+  const smIntegrations: string[] = contact.smIntegrations ?? [];
+  const hasQualData = contact.smPlan || contact.smUsers || smIntegrations.length > 0;
+
   return (
     <div className="page fade-in">
       <Link href="/contacts" className="back-link">← Contacts</Link>
@@ -71,7 +74,7 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
         <div>
           <div className="page-title">{contact.firstName} {contact.lastName}</div>
           {contact.company && (
-            <Link href={`/accounts`} className="page-subtitle" style={{ color: "var(--accent)", fontWeight: 600 }}>
+            <Link href="/accounts" className="page-subtitle" style={{ color: "var(--accent)", fontWeight: 600 }}>
               🏢 {contact.company}
             </Link>
           )}
@@ -138,6 +141,12 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
                   <span>{contact.company}</span>
                 </div>
               )}
+              {contact.source && (
+                <div className="detail-field">
+                  <span className="detail-field-label">Source</span>
+                  <span style={{ color: "var(--text-muted)" }}>{contact.source}</span>
+                </div>
+              )}
               {contact.notes && (
                 <div className="detail-field" style={{ flexDirection: "column", gap: 4 }}>
                   <span className="detail-field-label">Notes</span>
@@ -156,6 +165,37 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
               )}
             </div>
           </div>
+
+          {/* Smartsheet Qualification */}
+          {hasQualData && (
+            <div className="detail-card">
+              <div className="section-title">Smartsheet Qualification</div>
+              <div className="detail-fields">
+                {contact.smPlan && (
+                  <div className="detail-field">
+                    <span className="detail-field-label">Plan</span>
+                    <span className="tag" style={{ color: "var(--accent)", borderColor: "var(--accent)" }}>{contact.smPlan}</span>
+                  </div>
+                )}
+                {contact.smUsers && (
+                  <div className="detail-field">
+                    <span className="detail-field-label">Users</span>
+                    <span>{contact.smUsers}</span>
+                  </div>
+                )}
+                {smIntegrations.length > 0 && (
+                  <div className="detail-field" style={{ flexDirection: "column", gap: 6 }}>
+                    <span className="detail-field-label">Integrations</span>
+                    <div className="tags-row">
+                      {smIntegrations.map((i: string) => (
+                        <span key={i} className="tag" style={{ color: "var(--blue)", borderColor: "var(--blue)" }}>{i}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Deals */}
           <div className="detail-card">
@@ -185,7 +225,7 @@ Open deals: ${contact.deals.map((d: Deal) => `${d.title} (${d.stage}, ${fmt(d.va
 
       {editing && (
         <ContactModal
-          initial={{ ...contact, tags: contact.tags as string[] }}
+          initial={{ ...contact, tags: contact.tags as string[], smIntegrations: contact.smIntegrations ?? [] }}
           onClose={() => setEditing(false)}
           onSaved={(updated) => { setContact((prev: any) => ({ ...prev, ...updated })); setEditing(false); }}
         />
