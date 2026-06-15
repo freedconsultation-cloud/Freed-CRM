@@ -23,19 +23,33 @@ model Contact {
   tasks      Task[]
 }
 
+model Package {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @default("")
+  price       Float    @default(0)
+  type        String   @default("fixed")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deals       Deal[]
+}
+
 model Deal {
-  id         String     @id @default(cuid())
-  title      String
-  value      Float      @default(0)
-  stage      String     @default("Lead")
-  contactId  String?
-  notes      String     @default("")
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-  closedAt   DateTime?
-  contact    Contact?   @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  activities Activity[]
-  tasks      Task[]
+  id          String      @id @default(cuid())
+  title       String
+  value       Float       @default(0)
+  stage       String      @default("Lead")
+  contactId   String?
+  packageId   String?
+  notes       String      @default("")
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  closedAt    DateTime?
+  contact     Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  package     Package?    @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  activities  Activity[]
+  tasks       Task[]
+  milestones  Milestone[]
 }
 
 model Activity {
@@ -61,4 +75,17 @@ model Task {
   updatedAt   DateTime  @updatedAt
   contact     Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
   deal        Deal?     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  dealId      String
+  name        String
+  order       Int
+  status      String    @default("pending")
+  notes       String    @default("")
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deal        Deal      @relation(fields: [dealId], references: [id], onDelete: Cascade)
 }

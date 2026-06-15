@@ -10,6 +10,10 @@ const NAV = [
   { href: "/tasks", icon: "✅", label: "Tasks" },
 ];
 
+const SETTINGS = [
+  { href: "/settings/packages", icon: "📦", label: "Packages" },
+];
+
 export default function Sidebar() {
   const path = usePathname();
   return (
@@ -22,17 +26,30 @@ export default function Sidebar() {
       </div>
       <nav className="sidebar-nav">
         {NAV.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            className={`nav-link ${path.startsWith(n.href) ? "active" : ""}`}
-          >
+          <Link key={n.href} href={n.href} className={`nav-link ${path.startsWith(n.href) ? "active" : ""}`}>
+            <span className="nav-icon">{n.icon}</span>
+            {n.label}
+          </Link>
+        ))}
+        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", letterSpacing: "0.08em", textTransform: "uppercase", padding: "12px 10px 4px" }}>
+          Settings
+        </div>
+        {SETTINGS.map((n) => (
+          <Link key={n.href} href={n.href} className={`nav-link ${path.startsWith(n.href) ? "active" : ""}`}>
             <span className="nav-icon">{n.icon}</span>
             {n.label}
           </Link>
         ))}
       </nav>
-      <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)" }}>
+      <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: 8 }}>
+        <a
+          href="/intake"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 11, color: "var(--accent)", fontWeight: 600 }}
+        >
+          🔗 Client Intake Form ↗
+        </a>
         <a
           href="https://freedprojects.vercel.app"
           target="_blank"
